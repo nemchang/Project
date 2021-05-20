@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import font
 import tkinter.messagebox
-
+#깃 데스크톱 채크용
 DataList = [] #xml받아옴
 
 class MainGUI:
@@ -23,6 +23,7 @@ class MainGUI:
         self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput, font= ("한수원 한돋움",13,'bold'), relief='ridge')
         self.SearchEntry.place(x = 105, y = 12)
         # 검색 버튼
+
         self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion, font= ("한수원 한돋움",13,'bold'),fg ="#F0F0F0",bg = '#005CB2')
         self.SearchButton.place(x = 380, y = 8)
    
