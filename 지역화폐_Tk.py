@@ -3,9 +3,13 @@ from tkinter import ttk
 from tkinter import font
 import tkinter.messagebox
 #깃 데스크톱 채크용
-DataList = [] #xml받아옴
+import urllib
+import http.client
+
+DataList = [] #검색한 가맹점 리스트
 
 class MainGUI:
+    
 
     def InputSearchTab(self):#검색탭을 배치할 검색프레임 생성
 
@@ -16,16 +20,16 @@ class MainGUI:
         # self.label1.place(x=10,y=10) => 탭 프레임의 왼쪽위를 기준으로 x,y 좌표 초기화됨, 즉 왼쪽위끝에 놓으려면 (0,0)으로  프레임에 배치하면 됨
 
         #시/군 입력
-        self.SearchLabel = Label(self.frame_SearchTab, text=" 시/군 입력 ",font= ("한수원 한돋움",13,'bold'),fg ="#F0F0F0",bg = '#005CB2')
+        self.SearchLabel = Label(self.frame_SearchTab, text=" 시/군 입력 ",font= ("한수원 한돋움",13,'bold'),fg ="#ffffff",bg = '#005CB2')
         self.SearchLabel.place(x = 10, y = 12)
         # 입력창
         self.searchPlaceInput = StringVar()
-        self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput, font= ("한수원 한돋움",13,'bold'), relief='ridge')
+        self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput,bg = '#F0F0F0', font= ("한수원 한돋움",14,'bold'), relief='ridge')
         self.SearchEntry.place(x = 105, y = 12)
         # 검색 버튼
-
-        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion, font= ("한수원 한돋움",13,'bold'),fg ="#F0F0F0",bg = '#005CB2')
-        self.SearchButton.place(x = 380, y = 8)
+        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion,relief="ridge", font= ("한수원 한돋움",13,'bold'),\
+                                    fg ="#ffffff",bg = '#005CB2',activebackground='#ffffff',activeforeground="#005CB2" )
+        self.SearchButton.place(x = 395, y = 8)
    
     
     def InputBookmarkTab(self):#븍마크탭을 배치할 검색프레임 생성
@@ -56,8 +60,9 @@ class MainGUI:
 
      
     def SearchButtonAtion(self): #검색버튼누르면 돌아가는 함수 
-
-        #검색창 초기화
+        global DataList
+        # 검색창 초기화
+        DataList = []
         self.Value = self.SearchEntry.get()
         #print(self.Value)
         
@@ -66,78 +71,93 @@ class MainGUI:
     
     def SearchFranchise(self):
         # -*- coding:cp949 -*-
-        import urllib
-        import http.client
         from xml.dom.minidom import parse, parseString
-        
-        global DataList
-        
-        # self.SIGUN_CD = 0
-        # DataList.clear()
-        # SIGUN_NMList = ['가평군 ', '고양시', '과천시', '광명시', '광주시', '구리시', '군포시', '김포시', '남양주시', '동두천시', '부천시', '성남시', '수원시', '시흥시', '안산시', '안성시', \
-        #                 '안양시', '양주시', '양평군', '여주시', '연천군', '오산시', '용인시', '의왕시', '의정부시', '이천시', '파주시', '평택시', '포천시', '하남시', '화성시']
-        # SIGUN_CDList = [41820, 41280, 41290, 41210, 41610, 41310, 41410, 41570, 41360, 41250, 41190, 41130, 41110, 41390, 41270, 41550, 41170, 41630, 41830, 41670, 41800, 41370, 41460, 41430,\
-        #                 41150, 41500, 41480, 41220, 41650, 41450, 41590]
-        # for i in range(len(SIGUN_NMList)):
-        #     if self.Value == SIGUN_NMList[i]:
-        #         self.SIGUN_CD = SIGUN_CDList[i]
-        #주소에 한글을 안넣으려고 한 흔적
-        
-        #가맹점리스트 스크롤
-        self.ListBoxScrollbar = Scrollbar(self.frame_SearchTab) 
-        self.ListBoxScrollbar.pack()
-        self.ListBoxScrollbar.place(x = 450, y = 45)
 
+        headers = {
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/605.1.15',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+        }
         #가맹점리스트 먼저 생성
-        self.TempFont = font.Font(self.frame_SearchTab, size=15, weight='bold', family='한수원 한돋움')
-        self.ListBox = Text(self.frame_SearchTab, width= 59, height= 24, borderwidth=5, relief='ridge', yscrollcommand=self.ListBoxScrollbar.set)  
+        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=5, relief='ridge',activestyle=DOTBOX, \
+                        bg="#005CB2", fg = "#ffffff", selectbackground="#ffffff",selectforeground="#005CB2",selectborderwidth=1,font=("한수원 한돋움",13,'bold'))
 
         #오픈API 한글로 받는거
-        conn = http.client.HTTPConnection("openapi.gg.go.kr")
+        conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=1&pSize=1000&SIGUN_NM="+hangul_utf8) #가게이름
+
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
-        print(hangul_utf8)
+        print(conn,hangul_utf8)
         print(req.status,req.reason)
-        #여기서 req.status가 302가 나오는데 이게 뭔질 모르겠네요
-        #혹시몰라서 그 서울근린뭐시기 주소로 해봤는데 그거는 되네요
-        #두개 차이점이 주소에 한글이 들어가냐 아니냐 인거 같아요
-        #교수님이 올려주신 OpenAPI 한글 사용법에 있는 거 똑같이 해봤는데 그것도 302 나오는거 보니까
-        #한글에서 문제가 생기고 있는게 아닌가....
-        print(req.read().decode('utf-8'))
+        Doc=(req.read().decode('utf-8'))
 
-        # if req.status == 200:
-        #     self.ExtractFranchiseData(req.read().decode('utf-8'))
-        # else:
-        #     print("OpenAPI request has been failed!! please retry")
+        if req.status == 200:
+            if Doc==None:
+                print("에러")
+            else:
+                self.ExtractFranchiseData(Doc)
+
+        else:
+            print("OpenAPI request has been failed!! please retry")
         
-        #print(DataList)
-        # self.ListBox.configure(state='normal')
-        # self.ListBox.delete(0.0, END)
 
-        # for i in range(len(DataList)):  
-        #     self.ListBox.insert(i, "["+(i+1)+"]"+DataList[i]) 
+        self.ListBox.configure(state='normal')
 
-        # self.ListBox.pack()
-        # self.ListBox.place(x=10, y=45)
-        # self.ListBoxScrollbar.config(command=self.ListBox.yview)
+        for i in range(len(DataList)):
+            # print(DataList[i])
+            self.ListBox.insert(END,DataList[i])
+            # self.ListBox.insert(END, "\n")
 
-        # self.ListBox.configure(state='disabled') 
+        self.ListBox.pack()
+        self.ListBox.place(x=10, y=43)
 
-    # def ExtractFranchiseData(self, strXml):
-    #     from xml.etree import ElementTree
-    #     global DataList
+        #선택한 가게 정보 보기 버튼 삽입
+        self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),\
+                                activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
+        self.ShowButton.place(x = 10, y = 370)
 
-    #     tree = ElementTree.fromstring(strXml)
-    #     # Acc 엘리먼트를 가져옵니다.
-    #     itemElements = list(tree.iter("item"))  # return list type
+    def ExtractFranchiseData(self, Doc):
+        from xml.etree import ElementTree
 
-    #     for item in itemElements:
-    #         Franchise_name = item.find("CMPNM_NM")
-    #         #일단 가게 이름만 받아옴
-    #         if len(Franchise_name.text) > 0:
-    #             DataList.append((Franchise_name.text))
+        tree = ElementTree.fromstring(Doc)
 
+        # Acc 엘리먼트를 가져옵니다.
+        itemElements = list(tree.iter("row"))  # return list type
+        # print(itemElements)
+        for item in itemElements:
+            Franchise_name = item.find("CMPNM_NM")
+            #일단 가게 이름만 받아옴
+            if len(Franchise_name.text) > 0:
+                DataList.append((Franchise_name.text))
+    
+    def ShowInfo(self):#선택한 가게 정보 보기
+        self.is_on = False #해당 가맹점 북마크 on-true /off-false
+        self.selection = self.ListBox.get(self.ListBox.curselection())
+        # print(self.selection)
+        self.selecLabel = Label(self.frame_SearchTab, text=self.selection,font= ("한수원 한돋움",15,"underline"),bg ="#ffffff",fg = '#000000')
+        self.selecLabel.place(x = 460, y = 45)
+
+        self.on = PhotoImage(file = "image/on.png")
+        self.off = PhotoImage(file = "image/off.png")
+        
+        self.BookMarkButton = Button(self.frame_SearchTab, image = self.off, borderwidth=0, relief="flat", command=self.Switch)   
+        self.BookMarkButton.place(x = 798, y = 8)
+    
+    def Switch(self):# 북마크 온/오프
+        
+        if self.is_on:
+            self.BookMarkButton.config(image= self.off)
+            self.is_on = False
+        else:
+            self.BookMarkButton.config(image= self.on)
+            self.is_on = True
+
+    
     def sendGmail(self):
         pass
     def sendTelegram(self):
@@ -154,7 +174,7 @@ class MainGUI:
         style.theme_create('TAB_THEME', settings={
                 ".": {
                     "configure": {
-                        "background": '#F0F0F0', # All except tabs 탭 배경 색상
+                        "background": '#ffffff', # All except tabs 탭 배경 색상
                         "font": 'red'
                     }
                 },
@@ -173,7 +193,7 @@ class MainGUI:
                         "foreground" : '#005CB2' # 선택된 탭 버튼 글자색
                     },
                     "map": {
-                        "background": [("selected", '#F0F0F0')], # 선택된 탭 버튼 배경색
+                        "background": [("selected", '#ffffff')], # 선택된 탭 버튼 배경색
                         "foreground" : [("selected", '#005CB2')],# 선택된 탭 버튼 글자색
                         "expand": [("selected", [1, 1, 1, 0])] # text margins
                     }
@@ -188,6 +208,7 @@ class MainGUI:
         self.tab = ttk.Notebook()
         self.tab.pack()
         self.tab.place(x=25,y=25)
+        self.ListBox = None
 
         self.InputSearchTab()
         self.InputBookmarkTab()
