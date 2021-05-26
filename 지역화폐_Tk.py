@@ -2,7 +2,6 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.messagebox
 import folium
-from tkinterweb import HtmlFrame
 import webbrowser
 
 #깃 데스크톱 채크용
@@ -22,7 +21,6 @@ class MainGUI:
         self.frame_SearchTab = ttk.Frame(self.window, width=845, height=400, relief=RIDGE) 
         self.image_search = PhotoImage(file = "image/search.png")
         self.tab.add(self.frame_SearchTab,text="검색",image = self.image_search,compound=LEFT) # 검색탭을 검색 프레임에 추가
-        # self.label1 = Label(self.frame_SearchTab,text="검색검색")
         # self.label1.place(x=10,y=10) => 탭 프레임의 왼쪽위를 기준으로 x,y 좌표 초기화됨, 즉 왼쪽위끝에 놓으려면 (0,0)으로  프레임에 배치하면 됨
 
         #시/군 입력
@@ -38,20 +36,18 @@ class MainGUI:
         self.SearchButton.place(x = 395, y = 8)
    
     
-    def InputBookmarkTab(self):#븍마크탭을 배치할 검색프레임 생성
+    def InputSaveTab(self):#저장탭을 배치할 검색프레임 생성
 
-        self.frame_BookmarkTab = ttk.Frame(self.window, width=845, height=380, relief=RIDGE)
-        self.image_bookmark = PhotoImage(file = "image/bookmark.png")
-        self.tab.add(self.frame_BookmarkTab, text="북마크",image = self.image_bookmark,compound=LEFT) # 북마크탭을 북마크 프레임에 추가
-        # self.label2 = Label(self.frame_SaveTab,text="북마크마크")
-        # self.label2.place(x=10,y=10)
+        self.frame_SaveTab = ttk.Frame(self.window, width=845, height=380, relief=RIDGE)
+        self.image_save = PhotoImage(file = "image/save.png")
+        self.tab.add(self.frame_SaveTab, text="저장",image = self.image_save,compound=LEFT) # 저장탭을 저장 프레임에 추가
 
         self.image_Gmail = PhotoImage(file = "image/Gmail.png")
-        self.GmailButton = Button(self.frame_BookmarkTab,image=self.image_Gmail, command=self.sendGmail, bg = '#005CB2')
+        self.GmailButton = Button(self.frame_SaveTab,image=self.image_Gmail, command=self.sendGmail, bg = '#005CB2')
         self.GmailButton.place(x = 760, y = 100)
 
         self.image_telegram = PhotoImage(file = "image/telegram.png")
-        self.telegramButton = Button(self.frame_BookmarkTab,image=self.image_telegram, command=self.sendTelegram, bg = '#005CB2')
+        self.telegramButton = Button(self.frame_SaveTab,image=self.image_telegram, command=self.sendTelegram, bg = '#005CB2')
         self.telegramButton.place(x = 760, y = 200)
 
     def InputLogo(self):#로고그림추가
@@ -96,7 +92,7 @@ class MainGUI:
         conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
 
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=5&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
         print(conn,hangul_utf8)
         print(req.status,req.reason)
@@ -170,54 +166,45 @@ class MainGUI:
         # print(self.ListBox.index(self.ListBox.curselection()))#셀렉한가게인덱스
 
         self.selecLabel_NM = Label(self.frame_SearchTab, text="⚜ "+self.selection,font= ("한수원 한돋움",20),bg ="#ffffff",fg = '#005CB2')
-        self.selecLabel_NM.place(x = 460, y = 35)
+        self.selecLabel_NM.place(x = 460, y = 50)
 
         self.selecLabel_LA = Label(self.frame_SearchTab, text=DataList[self.ListBox.index(self.ListBox.curselection())][1],font= ("한수원 한돋움",9,"underline"),bg ="#ffffff",fg = '#005CB2')
-        self.selecLabel_LA.place(x = 460, y = 80)
+        self.selecLabel_LA.place(x = 460, y = 85)
 
         if DataList[self.ListBox.index(self.ListBox.curselection())][2] == None:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: - ",font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
-            self.selecLabel_ZC.place(x = 460, y = 100)
+            self.selecLabel_ZC.place(x = 460, y = 105)
         else:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
-            self.selecLabel_ZC.place(x = 460, y = 100)
+            self.selecLabel_ZC.place(x = 460, y = 105)
 
         ####################################################################################################################################
-        #
-        # # self.seleclat = float(DataList[self.ListBox.index(self.ListBox.curselection())][3]) #선택한 가맹점위도
-        # # self.seleclong = float(DataList[self.ListBox.index(self.ListBox.curselection())][4]) #선택한 가맹점경도
-        # # #print(self.seleclong)
-        # #
-        # # m = folium.Map([ self.seleclat,self.seleclong],zoom_start=9)
-        # # m.save('map.html')
-        #
-        # map_osm = folium.Map(location=[37.3402849,126.7313189], zoom_start=20)
-        # # 마커 지정
-        # folium.Marker([37.3402849,126.7313189], popup='한국산업기술대').add_to(map_osm)
-        # # html 파일로 저장
-        # map_osm.save('osm.html')
-        #
-        # frame = HtmlFrame(self.frame_SearchTab)  # create HTML browser
-        #
-        # frame.load_website("http://tkhtml.tcl.tk/tkhtml.html")  # load a website
-        # frame.pack(fill="both", expand=True)  # attach the HtmlFrame widget to the parent window
-        # # webbrowser.open_new('osm.html')
 
-        
-        self.on = PhotoImage(file = "image/on.png")
-        self.off = PhotoImage(file = "image/off.png")
-        
-        self.BookMarkButton = Button(self.frame_SearchTab, image = self.off, borderwidth=0, relief="flat", command=self.Switch)   
-        self.BookMarkButton.place(x = 798, y = 8)
+        self.seleclat = DataList[self.ListBox.index(self.ListBox.curselection())][3] #선택한 가맹점위도
+        self.seleclong = DataList[self.ListBox.index(self.ListBox.curselection())][4] #선택한 가맹점경도
+        #print(self.seleclong)
+
+        # server = 'dapi.kakao.com'
+        # key = 'a31b76e4df2614c2d21a4c20947c3f55'  # 본인 카카오앱키 입력
+        # header = {'Authorization': 'KakaoAK ' + key}
+        # conn = http.client.HTTPSConnection(server)
+        # conn.request("GET", "/v2/local/geo/coord2regioncode.xml?x="+self.seleclong+"&y="+self.seleclat, None, header)
+        # req = conn.getresponse()
+        #
+        # print(req.status, req.reason)
+        # # 200 OK 면 정상적으로 읽어온 것이고, 아닌 경우에는 홈페이지에 있는 에러 숫자 참고
+        #
+        # rb = req.read()
+        # print(rb.decode('utf-8'))
+        #
+        # map_osm.save('osm.html')
+
+        self.save = PhotoImage(file = "image/save2.png")#가맹점 저장 버튼
+        self.SaveFranchiseButton = Button(self.frame_SearchTab, image = self.save, borderwidth=0, relief="flat", command = self.SaveFranchise)
+        self.SaveFranchiseButton.place(x = 780, y = 8)
     
-    def Switch(self):# 북마크 온/오프
-        
-        if self.is_on:
-            self.BookMarkButton.config(image= self.off)
-            self.is_on = False
-        else:
-            self.BookMarkButton.config(image= self.on)
-            self.is_on = True
+    def SaveFranchise(self):#가맹점 저장
+        pass
 
     
     def sendGmail(self):
@@ -273,7 +260,7 @@ class MainGUI:
         self.ListBox = None
 
         self.InputSearchTab()
-        self.InputBookmarkTab()
+        self.InputSaveTab()
         self.InputLogo()
 
         self.window.mainloop()
