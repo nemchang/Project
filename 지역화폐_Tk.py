@@ -1,12 +1,18 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter import font
 import tkinter.messagebox
+import folium
+from tkinterweb import HtmlFrame
+import webbrowser
+
 #깃 데스크톱 채크용
 import urllib
 import http.client
+import urllib.request
+
 
 DataList = [] #검색한 가맹점 리스트
+is_getInfo = False #검색한 여부
 
 class MainGUI:
     
@@ -90,7 +96,7 @@ class MainGUI:
         conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
 
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=5&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
         print(conn,hangul_utf8)
         print(req.status,req.reason)
@@ -109,8 +115,8 @@ class MainGUI:
         self.ListBox.configure(state='normal')
 
         for i in range(len(DataList)):
-            # print(DataList[i])
-            self.ListBox.insert(END,DataList[i])
+            print(DataList[i])
+            self.ListBox.insert(END,DataList[i][0])
             # self.ListBox.insert(END, "\n")
 
         self.ListBox.pack()
@@ -130,18 +136,74 @@ class MainGUI:
         itemElements = list(tree.iter("row"))  # return list type
         # print(itemElements)
         for item in itemElements:
-            Franchise_name = item.find("CMPNM_NM")
+            Franchise_name = item.find("CMPNM_NM")#상호명
+            Franchise_LOTNO_add = item.find("REFINE_LOTNO_ADDR")#도로명주소
+            Franchise_ZIP_CD = item.find("REFINE_ZIP_CD")#우편번호
+            Franchise_WGS84_LAT = item.find("REFINE_WGS84_LAT") #위도
+            Franchise_WGS84_LOGT = item.find("REFINE_WGS84_LOGT") #경도
+            
             #일단 가게 이름만 받아옴
             if len(Franchise_name.text) > 0:
-                DataList.append((Franchise_name.text))
+                lst = []
+                lst.append(Franchise_name.text)
+                lst.append(Franchise_LOTNO_add.text)
+                lst.append(Franchise_ZIP_CD.text)
+                lst.append(Franchise_WGS84_LAT.text)
+                lst.append(Franchise_WGS84_LOGT.text)
+                
+                DataList.append(lst)
     
-    def ShowInfo(self):#선택한 가게 정보 보기
+    def ShowInfo(self):
+        global is_getInfo
+        
+        #선택한 가게 정보 보기
+
+        if is_getInfo == False: #is_getInfo = False
+            is_getInfo = True
+        else :
+            self.selecLabel_NM.place_forget() #상호명 라벨 초기화
+            self.selecLabel_LA.place_forget() #주소 라벨 초기화
+            self.selecLabel_ZC.place_forget() #우편번호 라벨 초기화
+
         self.is_on = False #해당 가맹점 북마크 on-true /off-false
         self.selection = self.ListBox.get(self.ListBox.curselection())
-        # print(self.selection)
-        self.selecLabel = Label(self.frame_SearchTab, text=self.selection,font= ("한수원 한돋움",15,"underline"),bg ="#ffffff",fg = '#000000')
-        self.selecLabel.place(x = 460, y = 45)
+        # print(self.ListBox.index(self.ListBox.curselection()))#셀렉한가게인덱스
 
+        self.selecLabel_NM = Label(self.frame_SearchTab, text="⚜ "+self.selection,font= ("한수원 한돋움",20),bg ="#ffffff",fg = '#005CB2')
+        self.selecLabel_NM.place(x = 460, y = 35)
+
+        self.selecLabel_LA = Label(self.frame_SearchTab, text=DataList[self.ListBox.index(self.ListBox.curselection())][1],font= ("한수원 한돋움",9,"underline"),bg ="#ffffff",fg = '#005CB2')
+        self.selecLabel_LA.place(x = 460, y = 80)
+
+        if DataList[self.ListBox.index(self.ListBox.curselection())][2] == None:
+            self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: - ",font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
+            self.selecLabel_ZC.place(x = 460, y = 100)
+        else:
+            self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
+            self.selecLabel_ZC.place(x = 460, y = 100)
+
+        ####################################################################################################################################
+        #
+        # # self.seleclat = float(DataList[self.ListBox.index(self.ListBox.curselection())][3]) #선택한 가맹점위도
+        # # self.seleclong = float(DataList[self.ListBox.index(self.ListBox.curselection())][4]) #선택한 가맹점경도
+        # # #print(self.seleclong)
+        # #
+        # # m = folium.Map([ self.seleclat,self.seleclong],zoom_start=9)
+        # # m.save('map.html')
+        #
+        # map_osm = folium.Map(location=[37.3402849,126.7313189], zoom_start=20)
+        # # 마커 지정
+        # folium.Marker([37.3402849,126.7313189], popup='한국산업기술대').add_to(map_osm)
+        # # html 파일로 저장
+        # map_osm.save('osm.html')
+        #
+        # frame = HtmlFrame(self.frame_SearchTab)  # create HTML browser
+        #
+        # frame.load_website("http://tkhtml.tcl.tk/tkhtml.html")  # load a website
+        # frame.pack(fill="both", expand=True)  # attach the HtmlFrame widget to the parent window
+        # # webbrowser.open_new('osm.html')
+
+        
         self.on = PhotoImage(file = "image/on.png")
         self.off = PhotoImage(file = "image/off.png")
         
