@@ -1,14 +1,22 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter import font
 import tkinter.messagebox
+import folium
+from tkinterweb import HtmlFrame
+import webbrowser
+from tkhtmlview import HTMLLabel
+
 #깃 데스크톱 채크용
-DataList = [] #xml받아옴
 import urllib
 import http.client
+import urllib.request
 
+
+DataList = [] #검색한 가맹점 리스트
+is_getInfo = False #검색한 여부
 
 class MainGUI:
+    
 
     def InputSearchTab(self):#검색탭을 배치할 검색프레임 생성
 
@@ -19,16 +27,16 @@ class MainGUI:
         # self.label1.place(x=10,y=10) => 탭 프레임의 왼쪽위를 기준으로 x,y 좌표 초기화됨, 즉 왼쪽위끝에 놓으려면 (0,0)으로  프레임에 배치하면 됨
 
         #시/군 입력
-        self.SearchLabel = Label(self.frame_SearchTab, text=" 시/군 입력 ",font= ("한수원 한돋움",13,'bold'),fg ="#F0F0F0",bg = '#005CB2')
+        self.SearchLabel = Label(self.frame_SearchTab, text=" 시/군 입력 ",font= ("한수원 한돋움",13,'bold'),fg ="#ffffff",bg = '#005CB2')
         self.SearchLabel.place(x = 10, y = 12)
         # 입력창
         self.searchPlaceInput = StringVar()
-        self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput, font= ("한수원 한돋움",13,'bold'), relief='ridge')
+        self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput,bg = '#F0F0F0', font= ("한수원 한돋움",14,'bold'), relief='ridge')
         self.SearchEntry.place(x = 105, y = 12)
         # 검색 버튼
-
-        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion, font= ("한수원 한돋움",13,'bold'),fg ="#F0F0F0",bg = '#005CB2')
-        self.SearchButton.place(x = 380, y = 8)
+        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion,relief="ridge", font= ("한수원 한돋움",13,'bold'),\
+                                    fg ="#ffffff",bg = '#005CB2',activebackground='#ffffff',activeforeground="#005CB2" )
+        self.SearchButton.place(x = 395, y = 8)
    
     
     def InputBookmarkTab(self):#븍마크탭을 배치할 검색프레임 생성
@@ -47,6 +55,8 @@ class MainGUI:
         self.telegramButton = Button(self.frame_BookmarkTab,image=self.image_telegram, command=self.sendTelegram, bg = '#005CB2')
         self.telegramButton.place(x = 760, y = 200)
 
+
+
     def InputLogo(self):#로고그림추가
         
         self.logo = PhotoImage(file="image/logo.png")
@@ -59,8 +69,9 @@ class MainGUI:
 
      
     def SearchButtonAtion(self): #검색버튼누르면 돌아가는 함수 
-
-        #검색창 초기화
+        global DataList
+        # 검색창 초기화
+        DataList = []
         self.Value = self.SearchEntry.get()
         #print(self.Value)
         
@@ -69,10 +80,7 @@ class MainGUI:
     
     def SearchFranchise(self):
         # -*- coding:cp949 -*-
-
         from xml.dom.minidom import parse, parseString
-
-        global DataList
 
         headers = {
             'Accept-Encoding': 'gzip, deflate, sdch',
@@ -83,98 +91,174 @@ class MainGUI:
             'Cache-Control': 'max-age=0',
             'Connection': 'keep-alive',
         }
-        # self.SIGUN_CD = 0
-        # DataList.clear()
-        # SIGUN_NMList = ['가평군 ', '고양시', '과천시', '광명시', '광주시', '구리시', '군포시', '김포시', '남양주시', '동두천시', '부천시', '성남시', '수원시', '시흥시', '안산시', '안성시', \
-        #                 '안양시', '양주시', '양평군', '여주시', '연천군', '오산시', '용인시', '의왕시', '의정부시', '이천시', '파주시', '평택시', '포천시', '하남시', '화성시']
-        # SIGUN_CDList = [41820, 41280, 41290, 41210, 41610, 41310, 41410, 41570, 41360, 41250, 41190, 41130, 41110, 41390, 41270, 41550, 41170, 41630, 41830, 41670, 41800, 41370, 41460, 41430,\
-        #                 41150, 41500, 41480, 41220, 41650, 41450, 41590]
-        # for i in range(len(SIGUN_NMList)):
-        #     if self.Value == SIGUN_NMList[i]:
-        #         self.SIGUN_CD = SIGUN_CDList[i]
-        #주소에 한글을 안넣으려고 한 흔적
-        
-        #가맹점리스트 스크롤
-        self.ListBoxScrollbar = Scrollbar(self.frame_SearchTab) 
-        self.ListBoxScrollbar.pack()
-        self.ListBoxScrollbar.place(x = 450, y = 45)
-
         #가맹점리스트 먼저 생성
-        self.TempFont = font.Font(self.frame_SearchTab, size=15, weight='bold', family='한수원 한돋움')
-        self.ListBox = Listbox(self.frame_SearchTab, width= 59, height= 24, borderwidth=5, relief='ridge', yscrollcommand=self.ListBoxScrollbar.set)
-
-
+        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=5, relief='ridge',activestyle=DOTBOX, \
+                        bg="#005CB2", fg = "#ffffff", selectbackground="#ffffff",selectforeground="#005CB2",selectborderwidth=1,font=("한수원 한돋움",13,'bold'))
 
         #오픈API 한글로 받는거
-
         conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
 
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=1&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=5&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
         print(conn,hangul_utf8)
         print(req.status,req.reason)
-        #여기서 req.status가 302가 나오는데 이게 뭔질 모르겠네요
-        #혹시몰라서 그 서울근린뭐시기 주소로 해봤는데 그거는 되네요
-        #두개 차이점이 주소에 한글이 들어가냐 아니냐 인거 같아요
-        #교수님이 올려주신 OpenAPI 한글 사용법에 있는 거 똑같이 해봤는데 그것도 302 나오는거 보니까
-        #한글에서 문제가 생기고 있는게 아닌가....
         Doc=(req.read().decode('utf-8'))
 
         if req.status == 200:
-            # self.ExtractFranchiseData(req.read().decode('utf-8'))
             if Doc==None:
                 print("에러")
             else:
                 self.ExtractFranchiseData(Doc)
-            # else:
-            #     parseData = parseString(Doc)
-            #     GeoInfoLibrary = parseData.childNodes
-            #     row =GeoInfoLibrary[0].childNodes
-            #     print(Doc)
-            #     print(row)
-            #
-            #     for item in row:
-            #         if item.nodeName == "row":
-            #             subitems = item.childNodes
-            #             Franchise_name = item.find("CMPNM_NM")
-            #             print(Franchise_name)
 
         else:
             print("OpenAPI request has been failed!! please retry")
         
 
         self.ListBox.configure(state='normal')
-        # self.ListBox.delete(0.0, END)
-
-
 
         for i in range(len(DataList)):
             print(DataList[i])
-            self.ListBox.insert(END,DataList[i])
+            self.ListBox.insert(END,DataList[i][0])
             # self.ListBox.insert(END, "\n")
 
         self.ListBox.pack()
-        self.ListBox.place(x=10, y=45)
-        self.ListBoxScrollbar.config(command=self.ListBox.yview)
+        self.ListBox.place(x=10, y=43)
 
-        # self.ListBox.configure(state='disabled')
+        #선택한 가게 정보 보기 버튼 삽입
+        self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),\
+                                activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
+        self.ShowButton.place(x = 10, y = 370)
 
     def ExtractFranchiseData(self, Doc):
         from xml.etree import ElementTree
-        global DataList
 
         tree = ElementTree.fromstring(Doc)
 
         # Acc 엘리먼트를 가져옵니다.
         itemElements = list(tree.iter("row"))  # return list type
-        print(itemElements)
+        # print(itemElements)
         for item in itemElements:
-            Franchise_name = item.find("CMPNM_NM")
+            Franchise_name = item.find("CMPNM_NM")#상호명
+            Franchise_LOTNO_add = item.find("REFINE_LOTNO_ADDR")#도로명주소
+            Franchise_ZIP_CD = item.find("REFINE_ZIP_CD")#우편번호
+            Franchise_WGS84_LAT = item.find("REFINE_WGS84_LAT") #위도
+            Franchise_WGS84_LOGT = item.find("REFINE_WGS84_LOGT") #경도
+            
             #일단 가게 이름만 받아옴
             if len(Franchise_name.text) > 0:
-                DataList.append((Franchise_name.text))
+                lst = []
+                lst.append(Franchise_name.text)
+                lst.append(Franchise_LOTNO_add.text)
+                lst.append(Franchise_ZIP_CD.text)
+                lst.append(Franchise_WGS84_LAT.text)
+                lst.append(Franchise_WGS84_LOGT.text)
+                
+                DataList.append(lst)
+    
+    def ShowInfo(self):
+        global is_getInfo
+        
+        #선택한 가게 정보 보기
 
+        if is_getInfo == False: #is_getInfo = False
+            is_getInfo = True
+        else :
+            self.selecLabel_NM.place_forget() #상호명 라벨 초기화
+            self.selecLabel_LA.place_forget() #주소 라벨 초기화
+            self.selecLabel_ZC.place_forget() #우편번호 라벨 초기화
+
+        self.is_on = False #해당 가맹점 북마크 on-true /off-false
+        self.selection = self.ListBox.get(self.ListBox.curselection())
+        # print(self.ListBox.index(self.ListBox.curselection()))#셀렉한가게인덱스
+
+        self.selecLabel_NM = Label(self.frame_SearchTab, text="⚜ "+self.selection,font= ("한수원 한돋움",20),bg ="#ffffff",fg = '#005CB2')
+        self.selecLabel_NM.place(x = 460, y = 35)
+
+        self.selecLabel_LA = Label(self.frame_SearchTab, text=DataList[self.ListBox.index(self.ListBox.curselection())][1],font= ("한수원 한돋움",9,"underline"),bg ="#ffffff",fg = '#005CB2')
+        self.selecLabel_LA.place(x = 460, y = 80)
+
+        if DataList[self.ListBox.index(self.ListBox.curselection())][2] == None:
+            self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: - ",font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
+            self.selecLabel_ZC.place(x = 460, y = 100)
+        else:
+            self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
+            self.selecLabel_ZC.place(x = 460, y = 100)
+
+        ####################################################################################################################################
+
+        # self.seleclat = float(DataList[self.ListBox.index(self.ListBox.curselection())][3]) #선택한 가맹점위도
+        # self.seleclong = float(DataList[self.ListBox.index(self.ListBox.curselection())][4]) #선택한 가맹점경도
+        # #print(self.seleclong)
+        #
+        # m = folium.Map([ self.seleclat,self.seleclong],zoom_start=9)
+        # m.save('map.html')
+        #
+        # map_osm = folium.Map(location=[37.3402849,126.7313189], zoom_start=20)
+        # # 마커 지정
+        # folium.Marker([37.3402849,126.7313189], popup='한국산업기술대').add_to(map_osm)
+        # # html 파일로 저장
+        # map_osm.save('osm.html')
+        # webbrowser.open_new('osm.html')
+        # frame = HtmlFrame(self.frame_SearchTab)  # create HTML browser
+
+        #
+        # frame.load_website('https://map.kakao.com/?urlX=882054&urlY=702967&urlLevel=3&map_type=TYPE_SKYVIEW&map_hybrid=true&q=%C6%C8%B0%F8%BB%EA')  # load a website
+        # frame.pack(fill="both", expand=True)  # attach the HtmlFrame widget to the parent window
+        # # webbrowser.open_new('osm.html')
+
+        
+        self.on = PhotoImage(file = "image/on.png")
+        self.off = PhotoImage(file = "image/off.png")
+        
+        self.BookMarkButton = Button(self.frame_SearchTab, image = self.off, borderwidth=0, relief="flat", command=self.Switch)   
+        self.BookMarkButton.place(x = 798, y = 8)
+    
+    def Switch(self):# 북마크 온/오프
+        
+        if self.is_on:
+            self.BookMarkButton.config(image= self.off)
+            self.is_on = False
+        else:
+            self.BookMarkButton.config(image= self.on)
+            self.is_on = True
+
+        lst=[]
+
+        lst.append(self.selection)
+        lst.append(DataList[self.ListBox.index(self.ListBox.curselection())][1])
+        lst.append(DataList[self.ListBox.index(self.ListBox.curselection())][2])
+
+
+        self.BookMark_List.append(lst)
+        for i in range (len(self.BookMark_List)):
+            print(self.BookMark_List[i])
+
+        self.BookMark_ListBox = Listbox(self.frame_BookmarkTab, width=33, height=15, borderwidth=5, relief='ridge',
+                               activestyle=DOTBOX, \
+                               bg="#005CB2", fg="#ffffff", selectbackground="#ffffff", selectforeground="#005CB2",
+                               selectborderwidth=1, font=("한수원 한돋움", 13, 'bold'))
+
+        self.BookMark_ListBox1 = Listbox(self.frame_BookmarkTab, width=33, height=15, borderwidth=5, relief='ridge',
+                                        activestyle=DOTBOX, \
+                                        bg="#005CB2", fg="#ffffff", selectbackground="#ffffff",
+                                        selectforeground="#005CB2",
+                                        selectborderwidth=1, font=("한수원 한돋움", 13, 'bold'))
+
+
+        for i in range(len(self.BookMark_List)):
+            print(self.BookMark_List[i])
+            self.BookMark_ListBox.insert(END, self.BookMark_List[i][0])
+            self.BookMark_ListBox.insert(END, self.BookMark_List[i][1])
+
+
+
+        self.BookMark_ListBox.pack()
+        self.BookMark_ListBox.place(x=10, y=43)
+
+
+
+    
     def sendGmail(self):
         pass
     def sendTelegram(self):
@@ -191,7 +275,7 @@ class MainGUI:
         style.theme_create('TAB_THEME', settings={
                 ".": {
                     "configure": {
-                        "background": '#F0F0F0', # All except tabs 탭 배경 색상
+                        "background": '#ffffff', # All except tabs 탭 배경 색상
                         "font": 'red'
                     }
                 },
@@ -210,7 +294,7 @@ class MainGUI:
                         "foreground" : '#005CB2' # 선택된 탭 버튼 글자색
                     },
                     "map": {
-                        "background": [("selected", '#F0F0F0')], # 선택된 탭 버튼 배경색
+                        "background": [("selected", '#ffffff')], # 선택된 탭 버튼 배경색
                         "foreground" : [("selected", '#005CB2')],# 선택된 탭 버튼 글자색
                         "expand": [("selected", [1, 1, 1, 0])] # text margins
                     }
@@ -225,10 +309,21 @@ class MainGUI:
         self.tab = ttk.Notebook()
         self.tab.pack()
         self.tab.place(x=25,y=25)
-
+        self.ListBox = None
+        self.BookMark_List = []
         self.InputSearchTab()
         self.InputBookmarkTab()
         self.InputLogo()
+        # my_label = HTMLLabel(root, html="""
+        #     <a href='https://www.geeksforgeeks.org/'>GEEKSFORGEEKS</a>
+        #
+        # <p>Free Tutorials, Millions of Articles, Live, Online and Classroom Courses ,Frequent Coding Competitions ,Webinars by Industry Experts, Internship opportunities and Job Opportunities.</p>
+        #
+        #     <img src="gfg.png">
+        #     """)
+        #
+        # # Adjust label
+        # my_label.pack(pady=20, padx=20)
 
         self.window.mainloop()
 
