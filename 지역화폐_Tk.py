@@ -2,15 +2,14 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.messagebox
 import folium
-from tkinterweb import HtmlFrame
 import webbrowser
-from tkhtmlview import HTMLLabel
-
+from cefpython3 import cefpython as cef
+import sys
 #깃 데스크톱 채크용
 import urllib
 import http.client
 import urllib.request
-
+import threading
 
 DataList = [] #검색한 가맹점 리스트
 is_getInfo = False #검색한 여부
@@ -99,7 +98,7 @@ class MainGUI:
         conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
 
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=5&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
         print(conn,hangul_utf8)
         print(req.status,req.reason)
@@ -129,6 +128,13 @@ class MainGUI:
         self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),\
                                 activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
         self.ShowButton.place(x = 10, y = 370)
+        self.frame = Frame(self.frame_SearchTab, width=300, height=300)
+        self.frame.place(x=400, y=200)
+        url = "www.google.com"
+        self.thread = threading.Thread(target=self.showMap, args=(self.frame, url))
+        self.thread.daemon = True
+        self.thread.start()
+
 
     def ExtractFranchiseData(self, Doc):
         from xml.etree import ElementTree
@@ -155,10 +161,32 @@ class MainGUI:
                 lst.append(Franchise_WGS84_LOGT.text)
                 
                 DataList.append(lst)
-    
+
+
+
+    def showMap(self,frame,url):
+        global a
+        sys.excepthook = cef.ExceptHook
+        window_info = cef.WindowInfo(frame.winfo_id())
+        window_info.SetAsChild(frame.winfo_id(), [0, 0, 300, 300])
+        cef.Initialize()
+        print(window_info.windowName)
+
+        # browser=cef.CreateBrowserSync(window_info, url="file:///map.html")
+
+        self.browser = cef.CreateBrowserSync(window_info,url=url)
+        self.browser.LoadUrl(url)
+        a=1
+        cef.MessageLoop()
+
+
+    def LoadUrl(self):
+        self.browser.LoadUrl("www.naver.com")
+        pass
+
     def ShowInfo(self):
         global is_getInfo
-        
+
         #선택한 가게 정보 보기
 
         if is_getInfo == False: #is_getInfo = False
@@ -185,27 +213,22 @@ class MainGUI:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
             self.selecLabel_ZC.place(x = 460, y = 100)
 
-        ####################################################################################################################################
+        m = folium.Map(location=[37.3402849, 126.7313189], zoom_start=13)
+        # 마커 지정
+        folium.Marker([37.3402849, 126.7313189], popup='한국산업기술대').add_to(m)
+        # html 파일로 저장
+        m.save('map.html')
 
-        # self.seleclat = float(DataList[self.ListBox.index(self.ListBox.curselection())][3]) #선택한 가맹점위도
-        # self.seleclong = float(DataList[self.ListBox.index(self.ListBox.curselection())][4]) #선택한 가맹점경도
-        # #print(self.seleclong)
-        #
-        # m = folium.Map([ self.seleclat,self.seleclong],zoom_start=9)
-        # m.save('map.html')
-        #
-        # map_osm = folium.Map(location=[37.3402849,126.7313189], zoom_start=20)
-        # # 마커 지정
-        # folium.Marker([37.3402849,126.7313189], popup='한국산업기술대').add_to(map_osm)
-        # # html 파일로 저장
-        # map_osm.save('osm.html')
-        # webbrowser.open_new('osm.html')
-        # frame = HtmlFrame(self.frame_SearchTab)  # create HTML browser
+        # 브라우저를 위한 쓰레드 생성
 
-        #
-        # frame.load_website('https://map.kakao.com/?urlX=882054&urlY=702967&urlLevel=3&map_type=TYPE_SKYVIEW&map_hybrid=true&q=%C6%C8%B0%F8%BB%EA')  # load a website
-        # frame.pack(fill="both", expand=True)  # attach the HtmlFrame widget to the parent window
-        # # webbrowser.open_new('osm.html')
+
+
+
+
+
+        self.LoadUrl()
+
+
 
         
         self.on = PhotoImage(file = "image/on.png")
@@ -213,6 +236,8 @@ class MainGUI:
         
         self.BookMarkButton = Button(self.frame_SearchTab, image = self.off, borderwidth=0, relief="flat", command=self.Switch)   
         self.BookMarkButton.place(x = 798, y = 8)
+
+
     
     def Switch(self):# 북마크 온/오프
         
@@ -265,12 +290,12 @@ class MainGUI:
         pass
 
     def __init__(self): #TK 그리기
-        
+
         self.window = Tk()
         self.window.title("스트레스는 지역화폐로 풀자!")
         self.window.geometry("900x500")
         self.window.configure(bg='#005CB2')
-
+        self.Onoff = False
         style = ttk.Style() # 탭 커스텀
         style.theme_create('TAB_THEME', settings={
                 ".": {
@@ -314,6 +339,9 @@ class MainGUI:
         self.InputSearchTab()
         self.InputBookmarkTab()
         self.InputLogo()
+
+
+
         # my_label = HTMLLabel(root, html="""
         #     <a href='https://www.geeksforgeeks.org/'>GEEKSFORGEEKS</a>
         #
@@ -326,6 +354,14 @@ class MainGUI:
         # my_label.pack(pady=20, padx=20)
 
         self.window.mainloop()
+
+a=0
+
+
+
+
+
+
 
 
 MainGUI()
