@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-import tkinter.messagebox
+from tkinter import messagebox
 import folium
 import webbrowser
 
@@ -12,6 +12,7 @@ import urllib.request
 
 DataList = [] #검색한 가맹점 리스트
 is_getInfo = False #검색한 여부
+save_List = []
 
 class MainGUI:
     
@@ -25,15 +26,15 @@ class MainGUI:
 
         #시/군 입력
         self.SearchLabel = Label(self.frame_SearchTab, text=" 시/군 입력 ",font= ("한수원 한돋움",13,'bold'),fg ="#ffffff",bg = '#005CB2')
-        self.SearchLabel.place(x = 10, y = 12)
+        self.SearchLabel.place(x = 5, y = 12)
         # 입력창
         self.searchPlaceInput = StringVar()
         self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput,bg = '#F0F0F0', font= ("한수원 한돋움",14,'bold'), relief='ridge')
-        self.SearchEntry.place(x = 105, y = 12)
+        self.SearchEntry.place(x = 100, y = 12)
         # 검색 버튼
         self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion,relief="ridge", font= ("한수원 한돋움",13,'bold'),\
                                     fg ="#ffffff",bg = '#005CB2',activebackground='#ffffff',activeforeground="#005CB2" )
-        self.SearchButton.place(x = 395, y = 8)
+        self.SearchButton.place(x = 390, y = 8)
    
     
     def InputSaveTab(self):#저장탭을 배치할 검색프레임 생성
@@ -85,18 +86,18 @@ class MainGUI:
             'Connection': 'keep-alive',
         }
         #가맹점리스트 먼저 생성
-        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=5, relief='ridge',activestyle=DOTBOX, \
+        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=3, relief='ridge',activestyle=DOTBOX, \
                         bg="#005CB2", fg = "#ffffff", selectbackground="#ffffff",selectforeground="#005CB2",selectborderwidth=1,font=("한수원 한돋움",13,'bold'))
 
         #오픈API 한글로 받는거
         conn = http.client.HTTPSConnection("openapi.gg.go.kr")
         hangul_utf8 = urllib.parse.quote(self.Value)
 
-        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=1000&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
+        conn.request("GET", "/RegionMnyFacltStus?KEY=a5ff90a0a64c48ee83f8ff3250b31afd&pIndex=3&pSize=20&SIGUN_NM="+hangul_utf8,headers=headers) #가게이름
         req = conn.getresponse()
-        print(conn,hangul_utf8)
-        print(req.status,req.reason)
-        Doc=(req.read().decode('utf-8'))
+        # print(conn,hangul_utf8)
+        # print(req.status,req.reason)
+        Doc =(req.read().decode('utf-8'))
 
         if req.status == 200:
             if Doc==None:
@@ -116,12 +117,12 @@ class MainGUI:
             # self.ListBox.insert(END, "\n")
 
         self.ListBox.pack()
-        self.ListBox.place(x=10, y=43)
+        self.ListBox.place(x=5, y=43)
 
         #선택한 가게 정보 보기 버튼 삽입
         self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),\
                                 activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
-        self.ShowButton.place(x = 10, y = 370)
+        self.ShowButton.place(x = 5, y = 370)
 
     def ExtractFranchiseData(self, Doc):
         from xml.etree import ElementTree
@@ -137,6 +138,7 @@ class MainGUI:
             Franchise_ZIP_CD = item.find("REFINE_ZIP_CD")#우편번호
             Franchise_WGS84_LAT = item.find("REFINE_WGS84_LAT") #위도
             Franchise_WGS84_LOGT = item.find("REFINE_WGS84_LOGT") #경도
+            Franchise_INDUTYPE_NM = item.find("INDUTYPE_NM")  # 업종명
             
             #일단 가게 이름만 받아옴
             if len(Franchise_name.text) > 0:
@@ -146,6 +148,7 @@ class MainGUI:
                 lst.append(Franchise_ZIP_CD.text)
                 lst.append(Franchise_WGS84_LAT.text)
                 lst.append(Franchise_WGS84_LOGT.text)
+                lst.append(Franchise_INDUTYPE_NM.text)
                 
                 DataList.append(lst)
     
@@ -157,6 +160,7 @@ class MainGUI:
         if is_getInfo == False: #is_getInfo = False
             is_getInfo = True
         else :
+            self.PrintselecLabel_INDUTYPE.place_forget()#업종별 사진 라벨 초기화
             self.selecLabel_NM.place_forget() #상호명 라벨 초기화
             self.selecLabel_LA.place_forget() #주소 라벨 초기화
             self.selecLabel_ZC.place_forget() #우편번호 라벨 초기화
@@ -165,48 +169,114 @@ class MainGUI:
         self.selection = self.ListBox.get(self.ListBox.curselection())
         # print(self.ListBox.index(self.ListBox.curselection()))#셀렉한가게인덱스
 
-        self.selecLabel_NM = Label(self.frame_SearchTab, text="⚜ "+self.selection,font= ("한수원 한돋움",20),bg ="#ffffff",fg = '#005CB2')
-        self.selecLabel_NM.place(x = 460, y = 50)
+        INDUTYPE = DataList[self.ListBox.index(self.ListBox.curselection())][5]
 
-        self.selecLabel_LA = Label(self.frame_SearchTab, text=DataList[self.ListBox.index(self.ListBox.curselection())][1],font= ("한수원 한돋움",9,"underline"),bg ="#ffffff",fg = '#005CB2')
+        if "보건" in INDUTYPE or "의원" in INDUTYPE or "약국" in INDUTYPE or "병원" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/hospital.png")
+        elif "음식" in INDUTYPE or "음료식품" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/food.png")
+        elif "여가" in INDUTYPE or "레저" in INDUTYPE or "문화" in INDUTYPE or "여행" in INDUTYPE or "레져" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/play.png")
+        elif "학원" in INDUTYPE or "교육" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/educate.png")
+        else :
+            self.INDUTYPE_image = PhotoImage(file="image/ect.png")
+
+        # self.save = PhotoImage(file="image/save2.png")  # 가맹점 저장 버튼
+        self.PrintselecLabel_INDUTYPE = Label(self.frame_SearchTab, image = self.INDUTYPE_image,bg ="#ffffff")
+        self.PrintselecLabel_INDUTYPE.place(x = 460, y = 50)
+
+        self.selecLabel_NM = Label(self.frame_SearchTab, text=self.selection,font= ("한수원 한돋움",20),bg ="#ffffff",fg = '#005CB2')
+        self.selecLabel_NM.place(x = 495, y = 50)
+
+        if DataList[self.ListBox.index(self.ListBox.curselection())][1] == None:
+            self.selecLabel_LA = Label(self.frame_SearchTab,text="주소 : - ",font=("한수원 한돋움", 9), bg="#ffffff", fg='#005CB2')
+        else :
+            self.selecLabel_LA = Label(self.frame_SearchTab, text=DataList[self.ListBox.index(self.ListBox.curselection())][1],font= ("한수원 한돋움",9,"underline"),bg ="#ffffff",fg = '#005CB2')
         self.selecLabel_LA.place(x = 460, y = 85)
 
         if DataList[self.ListBox.index(self.ListBox.curselection())][2] == None:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: - ",font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
-            self.selecLabel_ZC.place(x = 460, y = 105)
         else:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
-            self.selecLabel_ZC.place(x = 460, y = 105)
+        self.selecLabel_ZC.place(x = 460, y = 105)
 
         ####################################################################################################################################
 
         self.seleclat = DataList[self.ListBox.index(self.ListBox.curselection())][3] #선택한 가맹점위도
         self.seleclong = DataList[self.ListBox.index(self.ListBox.curselection())][4] #선택한 가맹점경도
-        #print(self.seleclong)
+        # print(self.seleclong,self.seleclat)
 
-        # server = 'dapi.kakao.com'
-        # key = 'a31b76e4df2614c2d21a4c20947c3f55'  # 본인 카카오앱키 입력
-        # header = {'Authorization': 'KakaoAK ' + key}
-        # conn = http.client.HTTPSConnection(server)
-        # conn.request("GET", "/v2/local/geo/coord2regioncode.xml?x="+self.seleclong+"&y="+self.seleclat, None, header)
-        # req = conn.getresponse()
-        #
-        # print(req.status, req.reason)
-        # # 200 OK 면 정상적으로 읽어온 것이고, 아닌 경우에는 홈페이지에 있는 에러 숫자 참고
-        #
-        # rb = req.read()
-        # print(rb.decode('utf-8'))
-        #
-        # map_osm.save('osm.html')
+        self.selecmap = Button(self.frame_SearchTab,text = "지도",height=6, width=5, command = lambda : self.Showkakao(1),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        self.selecmap.place(x = 452, y = 140)
+        self.myplace2selec = Button(self.frame_SearchTab, text="길찾기", height=6, width=5, command = lambda : self.Showkakao(2),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        self.myplace2selec.place(x=582, y=140)
+        self.selecroadview = Button(self.frame_SearchTab, text="로드뷰", height=6, width=5,command = lambda : self.Showkakao(3),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        self.selecroadview.place(x = 712, y=140)
 
-        self.save = PhotoImage(file = "image/save2.png")#가맹점 저장 버튼
-        self.SaveFranchiseButton = Button(self.frame_SearchTab, image = self.save, borderwidth=0, relief="flat", command = self.SaveFranchise)
-        self.SaveFranchiseButton.place(x = 780, y = 8)
-    
+        self.aa_image = PhotoImage(file="image/map.png")  # 가맹점 저장 버튼
+        self.aa = Label(self.frame_SearchTab, image = self.aa_image,bg ="#ffffff")
+        self.aa.place(x = 490, y = 140)
+
+        self.bb_image = PhotoImage(file="image/roadsign.png")  # 가맹점 저장 버튼
+        self.bb = Label(self.frame_SearchTab, image = self.bb_image,bg ="#ffffff")
+        self.bb.place(x = 620, y = 140)
+
+        self.cc_image = PhotoImage(file="image/roadview.png")  # 가맹점 저장 버튼
+        self.cc = Label(self.frame_SearchTab, image = self.cc_image,bg ="#ffffff")
+        self.cc.place(x = 750, y = 140)
+
+        self.save = PhotoImage(file = "image/save3.png")#가맹점 저장 버튼
+        self.SaveFranchiseButton = Button(self.frame_SearchTab, image = self.save,bg = '#ffffff' ,borderwidth=0, relief="flat", command = self.SaveFranchise)
+        self.SaveFranchiseButton.place(x = 720, y = 6)
+
+
     def SaveFranchise(self):#가맹점 저장
-        pass
+        global save_List
+        lst = []
 
-    
+        lst.append(self.selection)
+        if DataList[self.ListBox.index(self.ListBox.curselection())][1] == None :
+            lst.append("None")
+        else :
+            lst.append(DataList[self.ListBox.index(self.ListBox.curselection())][1])
+
+        for i in range(len(save_List)):
+            if lst[0] == save_List[i][0]:
+                messagebox.showerror("Error","이미 저장한 가맹점입니다.")
+                return ;
+
+        save_List.append(lst)
+
+        for i in range(len(save_List)):
+            print(save_List[i])
+
+        self.save_ListBox = Listbox(self.frame_SaveTab, width=33, height=17, borderwidth=5, relief='ridge',
+                                        activestyle=DOTBOX, \
+                                        bg="#FFDE1F", fg="#005CB2", selectbackground="#ffffff",
+                                        selectforeground="#005CB2",
+                                        selectborderwidth=1, font=("한수원 한돋움", 12, 'bold'))
+
+        for i in range(len(save_List)):
+            # print(save_List[i])
+            self.save_ListBox.insert(END,"["+str(i+1)+"] "+ save_List[i][0])
+            self.save_ListBox.insert(END, save_List[i][1])
+            self.save_ListBox.insert(END, " ")
+
+        self.save_ListBox.pack()
+        self.save_ListBox.place(x=10, y=35)
+
+    def Showkakao(self,num):
+        if num == 1 :
+            url = "https://map.kakao.com/link/map/"+self.selection+","+self.seleclat+","+self.seleclong
+            webbrowser.open(url)
+        elif num == 2 :
+            url = "https://map.kakao.com/link/to/"+self.selection+","+self.seleclat+","+self.seleclong
+            webbrowser.open(url)
+        else:
+            url = "https://map.kakao.com/link/roadview/" + self.seleclat + "," + self.seleclong
+            webbrowser.open(url)
+
     def sendGmail(self):
         pass
     def sendTelegram(self):
