@@ -129,8 +129,8 @@ class MainGUI:
                                 activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
         self.ShowButton.place(x = 10, y = 370)
         self.frame = Frame(self.frame_SearchTab, width=300, height=300)
-        self.frame.place(x=400, y=200)
-        url = "www.google.com"
+        self.frame.place(x=400, y=100)
+        url = 'file:///map.html'
         self.thread = threading.Thread(target=self.showMap, args=(self.frame, url))
         self.thread.daemon = True
         self.thread.start()
@@ -166,6 +166,8 @@ class MainGUI:
 
     def showMap(self,frame,url):
         global a
+        
+        # cef 처음 한번 만들기
         sys.excepthook = cef.ExceptHook
         window_info = cef.WindowInfo(frame.winfo_id())
         window_info.SetAsChild(frame.winfo_id(), [0, 0, 300, 300])
@@ -181,7 +183,9 @@ class MainGUI:
 
 
     def LoadUrl(self):
-        self.browser.LoadUrl("www.naver.com")
+        
+        # cef 갱신
+        self.browser.LoadUrl('file:///map.html')
         pass
 
     def ShowInfo(self):
@@ -213,13 +217,17 @@ class MainGUI:
             self.selecLabel_ZC = Label(self.frame_SearchTab, text="우편번호: "+DataList[self.ListBox.index(self.ListBox.curselection())][2],font= ("한수원 한돋움",10),bg ="#ffffff",fg = '#005CB2')
             self.selecLabel_ZC.place(x = 460, y = 100)
 
-        m = folium.Map(location=[37.3402849, 126.7313189], zoom_start=13)
+        self.Latitude = DataList[self.ListBox.index(self.ListBox.curselection())][3]
+        self.Hardness = DataList[self.ListBox.index(self.ListBox.curselection())][4]
+
+
+        m = folium.Map(location=[self.Latitude,self.Hardness ], zoom_start=15)
         # 마커 지정
-        folium.Marker([37.3402849, 126.7313189], popup='한국산업기술대').add_to(m)
+        folium.Marker([self.Latitude,  self.Hardness], popup=self.selection).add_to(m)
         # html 파일로 저장
         m.save('map.html')
-
-        # 브라우저를 위한 쓰레드 생성
+        
+        # 맵 갱신
 
 
 
@@ -326,6 +334,7 @@ class MainGUI:
                 }
             }
         )
+
         # '#005CB2' => 윈도우 배경색, 탭 비선택시 탭버튼 색상, 글자색1 (퍼런색)
         # '#F0F0F0' => 탭 배경색, 탭 선택시 탭버튼 색상 , 글자색2 (허연색)
         style.theme_use('TAB_THEME')
@@ -339,7 +348,8 @@ class MainGUI:
         self.InputSearchTab()
         self.InputBookmarkTab()
         self.InputLogo()
-
+        self.Latitude=37.3402849 #위도
+        self.Hardness=126.7313189 #경도
 
 
         # my_label = HTMLLabel(root, html="""
