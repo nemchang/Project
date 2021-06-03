@@ -5,6 +5,11 @@ import folium
 import webbrowser
 from cefpython3 import cefpython as cef
 import sys
+import mimetypes
+import smtplib
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+
 #깃 데스크톱 채크용
 import urllib
 import http.client
@@ -34,7 +39,7 @@ class MainGUI:
         self.SearchEntry = Entry(self.frame_SearchTab, textvariable=self.searchPlaceInput,bg = '#F0F0F0', font= ("한수원 한돋움",14,'bold'), relief='ridge')
         self.SearchEntry.place(x = 100, y = 12)
         # 검색 버튼
-        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion,relief="ridge", font= ("한수원 한돋움",13,'bold'),\
+        self.SearchButton = Button(self.frame_SearchTab, text= "검색!", command=self.SearchButtonAtion,relief="ridge", font= ("한수원 한돋움",13,'bold'),
                                     fg ="#ffffff",bg = '#005CB2',activebackground='#ffffff',activeforeground="#005CB2" )
         self.SearchButton.place(x = 390, y = 8)
    
@@ -46,7 +51,7 @@ class MainGUI:
         self.tab.add(self.frame_SaveTab, text="저장",image = self.image_save,compound=LEFT) # 저장탭을 저장 프레임에 추가
 
         self.image_Gmail = PhotoImage(file = "image/Gmail.png")
-        self.GmailButton = Button(self.frame_SaveTab,image=self.image_Gmail, command=self.sendGmail, bg = '#005CB2')
+        self.GmailButton = Button(self.frame_SaveTab,image=self.image_Gmail, command=self.getEmail, bg = '#005CB2')
         self.GmailButton.place(x = 760, y = 100)
 
         self.image_telegram = PhotoImage(file = "image/telegram.png")
@@ -66,6 +71,7 @@ class MainGUI:
      
     def SearchButtonAtion(self): #검색버튼누르면 돌아가는 함수 
         global DataList
+        global is_getInfo
         # 검색창 초기화
         DataList = []
         self.Value = self.SearchEntry.get()
@@ -88,7 +94,7 @@ class MainGUI:
             'Connection': 'keep-alive',
         }
         #가맹점리스트 먼저 생성
-        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=3, relief='ridge',activestyle=DOTBOX, \
+        self.ListBox = Listbox(self.frame_SearchTab, width= 33, height= 15, borderwidth=3, relief='ridge',activestyle=DOTBOX,
                         bg="#005CB2", fg = "#ffffff", selectbackground="#ffffff",selectforeground="#005CB2",selectborderwidth=1,font=("한수원 한돋움",13,'bold'))
 
         #오픈API 한글로 받는거
@@ -122,9 +128,29 @@ class MainGUI:
         self.ListBox.place(x=5, y=43)
 
         #선택한 가게 정보 보기 버튼 삽입
-        self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),\
+        self.ShowButton = Button(self.frame_SearchTab, text= "GET INFO", command=self.ShowInfo, font= ("한수원 한돋움",11,'bold'),
                                 activeforeground ="#F0F0F0",activebackground = '#005CB2',bg='#ffffff',fg="#005CB2", relief='ridge',height=1, width=43)
         self.ShowButton.place(x = 5, y = 370)
+
+        #지도 프레임 추가
+        self.Mapframe = Frame(self.frame_SearchTab, width=340, height=250)
+        self.Mapframe.place(x=450, y=130)
+        url = 'file:///map.html'
+        self.thread = threading.Thread(target=self.showMap, args=(self.Mapframe, url))
+        self.thread.daemon = True
+
+
+        self.drawSahde()
+
+    def drawSahde(self):
+        if is_getInfo == False:  # is_getInfo = False
+            self.shadeLabel = Label(self.frame_SearchTab, width=350, height=250,bg="#ffffff")
+            self.shadeLabel.place(x=450, y=130)
+            print("흰")
+        else :
+            self.shadeLabel.place_forget()
+            print("없")
+
 
     def ExtractFranchiseData(self, Doc):
         from xml.etree import ElementTree
@@ -154,26 +180,21 @@ class MainGUI:
                 
                 DataList.append(lst)
 
-    # def showMap(self, frame, url):
-    #     global a
-    #
-    #     # cef 처음 한번 만들기
-    #     sys.excepthook = cef.ExceptHook
-    #     window_info = cef.WindowInfo(frame.winfo_id())
-    #     window_info.SetAsChild(frame.winfo_id(), [0, 0, 300, 300])
-    #     cef.Initialize()
-    #     print(window_info.windowName)
-    #
-    #     # browser=cef.CreateBrowserSync(window_info, url="file:///map.html")
-    #
-    #     self.browser = cef.CreateBrowserSync(window_info, url=url)
-    #     self.browser.LoadUrl(url)
-    #     a = 1
-    #     cef.MessageLoop()
-    #
-    # def LoadUrl(self):
-    #     # cef 갱신
-    #     self.browser.LoadUrl('file:///map.html')
+    def showMap(self, frame, url):
+        # cef 처음 한번 만들기
+        sys.excepthook = cef.ExceptHook
+        window_info = cef.WindowInfo(frame.winfo_id())
+        window_info.SetAsChild(frame.winfo_id(), [0, 0, 340, 250])
+        cef.Initialize()
+        print(window_info.windowName)
+
+        self.browser = cef.CreateBrowserSync(window_info, url=url)
+        self.browser.LoadUrl(url)
+        cef.MessageLoop()
+
+    def LoadUrl(self):
+        # cef 갱신
+        self.browser.LoadUrl('file:///map.html')
     
     def ShowInfo(self):
         global is_getInfo
@@ -182,6 +203,8 @@ class MainGUI:
 
         if is_getInfo == False: #is_getInfo = False
             is_getInfo = True
+            self.drawSahde()
+            self.thread.start()
         else :
             self.PrintselecLabel_INDUTYPE.place_forget()#업종별 사진 라벨 초기화
             self.selecLabel_NM.place_forget() #상호명 라벨 초기화
@@ -195,13 +218,22 @@ class MainGUI:
         INDUTYPE = DataList[self.ListBox.index(self.ListBox.curselection())][5]
 
         if "보건" in INDUTYPE or "의원" in INDUTYPE or "약국" in INDUTYPE or "병원" in INDUTYPE:
-            self.INDUTYPE_image = PhotoImage(file="image/hospital.png")
-        elif "음식" in INDUTYPE or "음료식품" in INDUTYPE:
+            if "미용" in INDUTYPE:
+                self.INDUTYPE_image = PhotoImage(file="image/beauty.png")
+            else:
+                self.INDUTYPE_image = PhotoImage(file="image/hospital.png")
+        elif "식" in INDUTYPE or "카페" in INDUTYPE or "슈퍼" in INDUTYPE :
             self.INDUTYPE_image = PhotoImage(file="image/food.png")
-        elif "여가" in INDUTYPE or "레저" in INDUTYPE or "문화" in INDUTYPE or "여행" in INDUTYPE or "레져" in INDUTYPE:
+        elif "여가" in INDUTYPE or"문화" in INDUTYPE or "취미" in INDUTYPE:
             self.INDUTYPE_image = PhotoImage(file="image/play.png")
         elif "학원" in INDUTYPE or "교육" in INDUTYPE:
             self.INDUTYPE_image = PhotoImage(file="image/educate.png")
+        elif "레저" in INDUTYPE or "헬스" in INDUTYPE or "스포츠" in INDUTYPE or "레져" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/sport.png")
+        elif "숙박" in INDUTYPE or "여관" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/hotel.png")
+        elif "의류" in INDUTYPE:
+            self.INDUTYPE_image = PhotoImage(file="image/cloth.png")
         else :
             self.INDUTYPE_image = PhotoImage(file="image/ect.png")
 
@@ -230,36 +262,24 @@ class MainGUI:
         self.seleclong = DataList[self.ListBox.index(self.ListBox.curselection())][4] #선택한 가맹점경도
         # print(self.seleclong,self.seleclat)
 
-        # self.selecmap = Button(self.frame_SearchTab,text = "지도",height=6, width=5, command = lambda : self.Showkakao(1),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        # self.selecmap.place(x = 452, y = 140)
-        # self.myplace2selec = Button(self.frame_SearchTab, text="길찾기", height=6, width=5, command = lambda : self.Showkakao(2),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        # self.myplace2selec.place(x=582, y=140)
-        # self.selecroadview = Button(self.frame_SearchTab, text="로드뷰", height=6, width=5,command = lambda : self.Showkakao(3),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        # self.selecroadview.place(x = 712, y=140)
-        #
-        # # self.aa_image = PhotoImage(file="image/map.png")  # 가맹점 저장 버튼
-        # # self.aa = Label(self.frame_SearchTab, image = self.aa_image,bg ="#ffffff")
-        # # self.aa.place(x = 490, y = 140)
-        # #
-        # # self.bb_image = PhotoImage(file="image/roadsign.png")  # 가맹점 저장 버튼
-        # # self.bb = Label(self.frame_SearchTab, image = self.bb_image,bg ="#ffffff")
-        # # self.bb.place(x = 620, y = 140)
-        # #
-        # # self.cc_image = PhotoImage(file="image/roadview.png")  # 가맹점 저장 버튼
-        # # self.cc = Label(self.frame_SearchTab, image = self.cc_image,bg ="#ffffff")
-        # # self.cc.place(x = 750, y = 140)
-        # #
+        self.bb_image = PhotoImage(file="image/roadsign.png")
+        self.myplace2selec = Button(self.frame_SearchTab, image = self.bb_image, command = lambda : self.Showkakao(2),bg ="#ffffff")
+        self.myplace2selec.place(x = 795, y = 200)
+        self.cc_image = PhotoImage(file="image/roadview.png")
+        self.selecroadview = Button(self.frame_SearchTab, image = self.cc_image, command = lambda : self.Showkakao(3),bg ="#ffffff")
+        self.selecroadview.place(x = 795, y = 260)
+
         self.save = PhotoImage(file = "image/save3.png")#가맹점 저장 버튼
         self.SaveFranchiseButton = Button(self.frame_SearchTab, image = self.save,bg = '#ffffff' ,borderwidth=0, relief="flat", command = self.SaveFranchise)
         self.SaveFranchiseButton.place(x = 720, y = 6)
 
-        # m = folium.Map(location=[self.seleclat, self.seleclong], zoom_start=15)
-        # # 마커 지정
-        # folium.Marker([self.seleclat, self.seleclong], popup=self.selection).add_to(m)
-        # # html 파일로 저장
-        # m.save('map.html')
-        #
-        # self.LoadUrl()
+        m = folium.Map(location=[self.seleclat, self.seleclong], zoom_start=20)
+        # 마커 지정
+        folium.Marker([self.seleclat, self.seleclong], popup=self.selection).add_to(m)
+        # html 파일로 저장
+        m.save('map.html')
+
+        self.LoadUrl()
 
     def SaveFranchise(self):#가맹점 저장
         global save_List
@@ -274,15 +294,17 @@ class MainGUI:
         for i in range(len(save_List)):
             if lst[0] == save_List[i][0]:
                 messagebox.showerror("Error","이미 저장한 가맹점입니다.")
-                return ;
+                return
 
         save_List.append(lst)
 
-        for i in range(len(save_List)):
-            print(save_List[i])
+
+
+        self.save_ListLabel = Label(self.frame_SaveTab, text=" 저장한 가맹점 리스트 ",font= ("한수원 한돋움",15,'bold'),fg ="#ffffff",bg = '#005CB2')
+        self.save_ListLabel.place(x = 120, y = 8)
 
         self.save_ListBox = Listbox(self.frame_SaveTab, width=33, height=17, borderwidth=5, relief='ridge',
-                                        activestyle=DOTBOX, \
+                                        activestyle=DOTBOX,
                                         bg="#FFDE1F", fg="#005CB2", selectbackground="#ffffff",
                                         selectforeground="#005CB2",
                                         selectborderwidth=1, font=("한수원 한돋움", 12, 'bold'))
@@ -294,12 +316,113 @@ class MainGUI:
             self.save_ListBox.insert(END, " ")
 
         self.save_ListBox.pack()
-        self.save_ListBox.place(x=10, y=35)
+        self.save_ListBox.place(x = 10, y = 35)
 
+        print(save_List)
 
+    def Showkakao(self, num):
+        if num == 2:
+            url = "https://map.kakao.com/link/to/" + self.selection + "," + self.seleclat + "," + self.seleclong
+            webbrowser.open(url)
+        else:
+            url = "https://map.kakao.com/link/roadview/" + self.seleclat + "," + self.seleclong
+            webbrowser.open(url)
 
-    def sendGmail(self):
-        pass
+    def getEmail(self):
+        self.email_top = Toplevel(self.window)
+        self.email_label = Label(self.email_top, text="받으실 메일 주소를 입력하세요")
+        self.email_label.place(x=10, y=10)
+        self.email_entrybox = Entry(self.email_top, width=25)
+        self.email_entrybox.place(x=10, y=35)
+        self.email_top.geometry('200x90+200+300')
+
+        self.email_OK = Button(self.email_top, text='확인', command=self.googleLoginAndSendEmail)
+        self.email_OK.place(x=80, y=60)
+        self.email_top.deiconify()
+
+    def googleLoginAndSendEmail(self):
+
+        htmlTxt = self.MakeHtmlDoc()
+
+        senderAddr = "dragonkai7233@gmail.com"
+
+        recipientAddr = ""
+
+        msg = MIMEBase("multipart", "alternative")
+        msg['Subject'] = "스트레스는 지역화폐로 풀자! 가맹점 저장 리스트"
+        msg['From'] = senderAddr
+        msg['To'] = recipientAddr
+
+        # MIME 문서를 생성
+        # htmlFD = open(htmlFileName, 'rb')
+        # HtmlPart = MIMEText(htmlFD.read(), 'html', _charset='UTF-8')
+        # htmlFD.close()
+
+        messagePart = MIMEText(htmlTxt, 'html', _charset='UTF-8')
+
+        # 메세지에 생성한 MIME 문서를 첨부합니다.
+        msg.attach(messagePart)
+
+        # 메일 발송하기
+
+        mySmtp = smtplib.SMTP("smtp.gmail.com", 587)
+        mySmtp.ehlo()
+        mySmtp.starttls()
+        mySmtp.ehlo()
+        mySmtp.login(senderAddr, "yeonu910716")
+
+        recipientAddr = self.email_entrybox.get()  # 앞에서 받아온 이메일
+
+        mySmtp.sendmail(senderAddr, [recipientAddr], msg.as_string())
+
+        self.email_entrybox.delete(0, 'end')  # 초기화
+        self.email_top.withdraw()  # 창삭제
+        msg = messagebox.showinfo("EMAIL", "전송 완료!")
+
+        mySmtp.close()
+
+    def MakeHtmlDoc(self): # HTML로 변환
+        from xml.dom.minidom import getDOMImplementation
+        # get Dom Implementation
+        impl = getDOMImplementation()
+
+        newdoc = impl.createDocument(None, "html", None)  # DOM 객체 생성
+        top_element = newdoc.documentElement
+        header = newdoc.createElement('header')
+        top_element.appendChild(header)
+        # Body 엘리먼트 생성.
+        body = newdoc.createElement('body')
+
+        for item in save_List:
+            # create 주소 엘리먼트
+
+            # savelist 태그 (엘리먼트) 생성.
+            savelist = newdoc.createElement('savelist')
+            body.appendChild(savelist)
+
+            # 가맹점 이름
+            name = newdoc.createElement('name')
+            # create text node
+            nameText = newdoc.createTextNode("   가맹점 : " + item[0])
+            name.appendChild(nameText)
+
+            body.appendChild(name)
+
+               # 가맹점 주소
+            address = newdoc.createElement('address')
+            # create text node
+            addressText = newdoc.createTextNode("   주소 : " + item[1])
+            address.appendChild(addressText)
+
+            body.appendChild(address)
+
+            body.appendChild(savelist)  # line end
+
+        # append Body
+        top_element.appendChild(body)
+
+        return newdoc.toxml()
+
     def sendTelegram(self):
         pass
 
@@ -352,8 +475,9 @@ class MainGUI:
         self.InputSearchTab()
         self.InputSaveTab()
         self.InputLogo()
-        # self.seleclat = 37.3402849 #위도
-        # self.seleclong = 126.7313189 #경도
+        self.seleclat = 37.3402849 #위도
+        self.seleclong = 126.7313189 #경도
+
 
         self.window.mainloop()
 
