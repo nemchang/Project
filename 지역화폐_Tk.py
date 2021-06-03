@@ -1,13 +1,15 @@
 from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+import tkinter.messagebox
 import folium
 import webbrowser
-
+from cefpython3 import cefpython as cef
+import sys
 #깃 데스크톱 채크용
 import urllib
 import http.client
 import urllib.request
+import threading
 
 
 DataList = [] #검색한 가맹점 리스트
@@ -151,6 +153,27 @@ class MainGUI:
                 lst.append(Franchise_INDUTYPE_NM.text)
                 
                 DataList.append(lst)
+
+    # def showMap(self, frame, url):
+    #     global a
+    #
+    #     # cef 처음 한번 만들기
+    #     sys.excepthook = cef.ExceptHook
+    #     window_info = cef.WindowInfo(frame.winfo_id())
+    #     window_info.SetAsChild(frame.winfo_id(), [0, 0, 300, 300])
+    #     cef.Initialize()
+    #     print(window_info.windowName)
+    #
+    #     # browser=cef.CreateBrowserSync(window_info, url="file:///map.html")
+    #
+    #     self.browser = cef.CreateBrowserSync(window_info, url=url)
+    #     self.browser.LoadUrl(url)
+    #     a = 1
+    #     cef.MessageLoop()
+    #
+    # def LoadUrl(self):
+    #     # cef 갱신
+    #     self.browser.LoadUrl('file:///map.html')
     
     def ShowInfo(self):
         global is_getInfo
@@ -207,29 +230,36 @@ class MainGUI:
         self.seleclong = DataList[self.ListBox.index(self.ListBox.curselection())][4] #선택한 가맹점경도
         # print(self.seleclong,self.seleclat)
 
-        self.selecmap = Button(self.frame_SearchTab,text = "지도",height=6, width=5, command = lambda : self.Showkakao(1),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        self.selecmap.place(x = 452, y = 140)
-        self.myplace2selec = Button(self.frame_SearchTab, text="길찾기", height=6, width=5, command = lambda : self.Showkakao(2),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        self.myplace2selec.place(x=582, y=140)
-        self.selecroadview = Button(self.frame_SearchTab, text="로드뷰", height=6, width=5,command = lambda : self.Showkakao(3),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
-        self.selecroadview.place(x = 712, y=140)
-
-        self.aa_image = PhotoImage(file="image/map.png")  # 가맹점 저장 버튼
-        self.aa = Label(self.frame_SearchTab, image = self.aa_image,bg ="#ffffff")
-        self.aa.place(x = 490, y = 140)
-
-        self.bb_image = PhotoImage(file="image/roadsign.png")  # 가맹점 저장 버튼
-        self.bb = Label(self.frame_SearchTab, image = self.bb_image,bg ="#ffffff")
-        self.bb.place(x = 620, y = 140)
-
-        self.cc_image = PhotoImage(file="image/roadview.png")  # 가맹점 저장 버튼
-        self.cc = Label(self.frame_SearchTab, image = self.cc_image,bg ="#ffffff")
-        self.cc.place(x = 750, y = 140)
-
+        # self.selecmap = Button(self.frame_SearchTab,text = "지도",height=6, width=5, command = lambda : self.Showkakao(1),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        # self.selecmap.place(x = 452, y = 140)
+        # self.myplace2selec = Button(self.frame_SearchTab, text="길찾기", height=6, width=5, command = lambda : self.Showkakao(2),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        # self.myplace2selec.place(x=582, y=140)
+        # self.selecroadview = Button(self.frame_SearchTab, text="로드뷰", height=6, width=5,command = lambda : self.Showkakao(3),font= ("한수원 한돋움",25),fg ="#ffffff",bg = '#005CB2')
+        # self.selecroadview.place(x = 712, y=140)
+        #
+        # # self.aa_image = PhotoImage(file="image/map.png")  # 가맹점 저장 버튼
+        # # self.aa = Label(self.frame_SearchTab, image = self.aa_image,bg ="#ffffff")
+        # # self.aa.place(x = 490, y = 140)
+        # #
+        # # self.bb_image = PhotoImage(file="image/roadsign.png")  # 가맹점 저장 버튼
+        # # self.bb = Label(self.frame_SearchTab, image = self.bb_image,bg ="#ffffff")
+        # # self.bb.place(x = 620, y = 140)
+        # #
+        # # self.cc_image = PhotoImage(file="image/roadview.png")  # 가맹점 저장 버튼
+        # # self.cc = Label(self.frame_SearchTab, image = self.cc_image,bg ="#ffffff")
+        # # self.cc.place(x = 750, y = 140)
+        # #
         self.save = PhotoImage(file = "image/save3.png")#가맹점 저장 버튼
         self.SaveFranchiseButton = Button(self.frame_SearchTab, image = self.save,bg = '#ffffff' ,borderwidth=0, relief="flat", command = self.SaveFranchise)
         self.SaveFranchiseButton.place(x = 720, y = 6)
 
+        # m = folium.Map(location=[self.seleclat, self.seleclong], zoom_start=15)
+        # # 마커 지정
+        # folium.Marker([self.seleclat, self.seleclong], popup=self.selection).add_to(m)
+        # # html 파일로 저장
+        # m.save('map.html')
+        #
+        # self.LoadUrl()
 
     def SaveFranchise(self):#가맹점 저장
         global save_List
@@ -266,16 +296,7 @@ class MainGUI:
         self.save_ListBox.pack()
         self.save_ListBox.place(x=10, y=35)
 
-    def Showkakao(self,num):
-        if num == 1 :
-            url = "https://map.kakao.com/link/map/"+self.selection+","+self.seleclat+","+self.seleclong
-            webbrowser.open(url)
-        elif num == 2 :
-            url = "https://map.kakao.com/link/to/"+self.selection+","+self.seleclat+","+self.seleclong
-            webbrowser.open(url)
-        else:
-            url = "https://map.kakao.com/link/roadview/" + self.seleclat + "," + self.seleclong
-            webbrowser.open(url)
+
 
     def sendGmail(self):
         pass
@@ -328,10 +349,11 @@ class MainGUI:
         self.tab.pack()
         self.tab.place(x=25,y=25)
         self.ListBox = None
-
         self.InputSearchTab()
         self.InputSaveTab()
         self.InputLogo()
+        # self.seleclat = 37.3402849 #위도
+        # self.seleclong = 126.7313189 #경도
 
         self.window.mainloop()
 
