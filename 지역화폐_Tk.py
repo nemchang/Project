@@ -575,9 +575,23 @@ class MainGUI:
         return color
 
     def refesh_Pie(self):
+        global save_List
         print("asd")
+        a = spam.list(eval(save_List[0][2]),eval(save_List[1][2]),eval(save_List[2][2]),
+                      eval(save_List[3][2]),eval(save_List[4][2]),eval(save_List[5][2]),
+                      eval(save_List[6][2]),eval(save_List[7][2]),eval(save_List[8][2]),
+                      eval(save_List[9][2]))
+        #     ,eval(save_List[10][2]),eval(save_List[11][2]),
+        #               eval(save_List[12][2]),eval(save_List[13][2]),eval(save_List[14][2]),
+        #               eval(save_List[15][2]),eval(save_List[16][2]),eval(save_List[17][2]),
+        #               eval(save_List[18][2]),eval(save_List[19][2]))
+        # # a=spam.list(eval(save_List[0][2]),save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],
+        #             save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],
+        #             save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],
+        #             save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2],save_List[0][2])
+        print(a)
 
-        self.data2=[100,100,100,100,100]
+        self.data2=[a[0],a[1],a[2],a[3],1]
         s = sum(self.data2)
         start = 0
         self.c2.destroy()
