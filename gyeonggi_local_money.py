@@ -75,6 +75,9 @@ class MainGUI:
                                      bg='#005CB2')
         self.telegramButton.place(x=760, y=200)
 
+        self.LLabel = Label(self.frame_SaveTab, text=" < 저장한 가맹점 지역 분류 > ", font=("한수원 한돋움", 20, 'bold'), fg="#ffffff", bg='#005CB2')
+        self.LLabel.place(x=350, y=20)
+
         # c++ 용 분류 버튼 생성
         self.image_sort = PhotoImage(file="image/pie.png")
         self.sortButton = Button(self.frame_SaveTab, image=self.image_sort, command=self.sort_list, bg='#005CB2')
